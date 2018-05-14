@@ -1,0 +1,16 @@
+broadcast:
+    resource: "@BroadcastBundle/Controller/"
+    type:     annotation
+    prefix:   /
+
+app:
+    resource: '@AppBundle/Controller/'
+    type: annotation
+    prefix: /
+
+NelmioApiDocBundle:
+    resource: "@NelmioApiDocBundle/Resources/config/routing.yml"
+    prefix:   /api/doc
+
+api_login_check:
+    path: /api/login/

@@ -1,0 +1,24 @@
+#parameters:
+#    pusher:
+#        id: 517653
+#        key: f3f6a27d6c5295ccb46c
+#        secret: 510618b1e67cbcd4196e
+#        cluster: eu
+
+services:
+    BroadcastBundle\:
+        resource: '../../../BroadcastBundle/*'
+        exclude: '../../../BroadcastBundle/{Entity,Repository,Tests}'
+
+    pusher_service:
+        class: BroadcastBundle\Service\PusherService
+        arguments: ['%pusher%']
+
+    application_listener:
+        class: BroadcastBundle\Listener\BroadcastListener
+        arguments:
+            - '@pusher_service'
+        tags:
+            - { name: kernel.event_listener, event: broadcast.message, method: handle }
+
+    BroadcastBundle\Service\PusherInterface: '@pusher_service'
