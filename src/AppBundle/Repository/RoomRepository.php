@@ -2,7 +2,11 @@
 
 namespace AppBundle\Repository;
 
+use AppBundle\Entity\Message;
+use AppBundle\Entity\Room;
+use AppBundle\Entity\RoomMessage;
 use AppBundle\Entity\User;
+use Carbon\Carbon;
 use Doctrine\ORM\EntityRepository;
 
 /**
@@ -22,5 +26,46 @@ class RoomRepository extends EntityRepository
             ->getQuery();
 
         return $rooms;
+    }
+
+    public function save(Room $room)
+    {
+        $newInstance = false;
+
+        if (!$room->getCreatedAt()) {
+            $newInstance = true;
+            $room->setCreatedAt(Carbon::now());
+        }
+
+        $this->getEntityManager()->persist($room);
+        $this->getEntityManager()->flush();
+
+        if ($newInstance) {
+
+            $repository = $this->getEntityManager()->getRepository(RoomMessage::class);
+            foreach ($room->getUsers() as $user) {
+                /** @var User $user */
+                $message = new Message();
+                $message->setInfoText(Message::joinChat, $user->getUsername());
+                $this->getEntityManager()->persist($message);
+                $this->getEntityManager()->flush();
+                $repository->saveRoomMessages($message, $room, Null, $info=true);
+            }
+        }
+
+        return $room;
+    }
+
+    /**
+     * Delete room
+     *
+     * @param Room $room
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function delete(Room $room)
+    {
+        $this->getEntityManager()->remove($room);
+        $this->getEntityManager()->flush();
     }
 }

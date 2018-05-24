@@ -3,8 +3,7 @@
 namespace AppBundle\Controller;
 
 use AppBundle\Entity\Room;
-use AppBundle\Handler\RoomHandler;
-use AppBundle\Handler\RoomMessageHandler;
+use AppBundle\Task\RoomSaveTask;
 use AppBundle\Transformer\RoomTransformer;
 use League\Fractal\Resource\Collection;
 use League\Fractal\Resource\Item;
@@ -20,9 +19,14 @@ class RoomController extends Controller
     /**
      * @Route("/api/rooms/", methods={"GET"}, name="room_list")
      */
-    public function indexAction(Request $request, RoomHandler $roomHandler)
+    public function indexAction(Request $request)
     {
-        $resource = new Collection($roomHandler->list($this->getUser()), new RoomTransformer());
+        $rooms = $this->getDoctrine()
+            ->getRepository(Room::class)
+            ->roomsWithUser($this->getUser())
+            ->getResult();
+
+        $resource = new Collection($rooms, new RoomTransformer());
 
         return new JsonResponse(
             $this->fractal($resource, $request)
@@ -48,12 +52,12 @@ class RoomController extends Controller
     /**
      * @Route("/api/rooms/", methods={"POST"}, name="room_create")
      */
-    public function createAction(Request $request, RoomHandler $roomHandler, RoomMessageHandler $messageHandler)
+    public function createAction(Request $request, RoomSaveTask $task)
     {
-        $room = $roomHandler->save(new Room(), $this->getUser(), $request, $messageHandler);
+        $room = $task->run(new Room(), $this->getUser(), $request);
 
-        if($roomHandler->getErrors()->count() > 0) {
-            return $this->validationError($roomHandler->getErrors());
+        if($task->getErrors()->count() > 0) {
+            return $this->validationError($task->getErrors());
         }
 
         $resource = new Item($room, new RoomTransformer());
@@ -66,12 +70,12 @@ class RoomController extends Controller
     /**
      * @Route("/api/rooms/{id}/", methods={"PUT"}, name="room_update")
      */
-    public function updateAction(Room $room, Request $request, RoomHandler $roomHandler, RoomMessageHandler $messageHandler)
+    public function updateAction(Room $room, Request $request, RoomSaveTask $task)
     {
-        $room = $roomHandler->save($room, $this->getUser(), $request, $messageHandler);
+        $room = $task->run($room, $this->getUser(), $request);
 
-        if($roomHandler->getErrors()->count() > 0) {
-            return $this->validationError($roomHandler->getErrors());
+        if($task->getErrors()->count() > 0) {
+            return $this->validationError($task->getErrors());
         }
 
         $resource = new Item($room, new RoomTransformer());
@@ -84,13 +88,15 @@ class RoomController extends Controller
     /**
      * @Route("/api/rooms/{id}/", methods={"DELETE"}, name="room_delete")
      */
-    public function deleteAction(Room $room, Request $request, RoomHandler $roomHandler)
+    public function deleteAction(Room $room, Request $request)
     {
         if (!in_array($this->getUser(), $room->getUsers()->toArray())) {
             throw $this->createNotFoundException();
         }
 
-        $roomHandler->delete($room);
+        $this->getDoctrine()
+            ->getRepository(Room::class)
+            ->delete($room);
 
         $resource = new Item($room, new RoomTransformer());
 

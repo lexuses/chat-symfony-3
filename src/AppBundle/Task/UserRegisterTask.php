@@ -1,31 +1,28 @@
 <?php
 
-namespace AppBundle\Handler;
+namespace AppBundle\Task;
 
 use AppBundle\Entity\User;
 use AppBundle\Form\Type\UserType;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class UserHandler
+class UserRegisterTask
 {
     /**
      * @var FormFactoryInterface
      */
     private $form;
-
+    /**
+     * @var array
+     */
     private $errors;
     /**
      * @var ValidatorInterface
      */
     private $validator;
-    /**
-     * @var EntityManagerInterface
-     */
-    private $em;
     /**
      * @var RegistryInterface
      */
@@ -34,13 +31,11 @@ class UserHandler
     public function __construct(
         FormFactoryInterface $form,
         ValidatorInterface $validator,
-        EntityManagerInterface $em,
         RegistryInterface $doctrine
     )
     {
         $this->form = $form;
         $this->validator = $validator;
-        $this->em = $em;
         $this->doctrine = $doctrine;
     }
 
@@ -49,7 +44,16 @@ class UserHandler
         return $this->errors;
     }
 
-    public function register(User $user, Request $request)
+    /**
+     * Register user
+     *
+     * @param User $user
+     * @param Request $request
+     * @return User
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function run(User $user, Request $request)
     {
         $user->setEnabled(True);
         $data = json_decode($request->getContent(), true);
@@ -61,16 +65,10 @@ class UserHandler
             return $user;
         }
 
-        $this->em->persist($user);
-        $this->em->flush();
+        $this->doctrine
+            ->getRepository(User::class)
+            ->save($user);
 
         return $user;
-    }
-
-    public function list()
-    {
-        return $this->doctrine
-            ->getRepository(User::class)
-            ->findAll();
     }
 }

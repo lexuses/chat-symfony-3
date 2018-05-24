@@ -4,8 +4,9 @@ namespace AppBundle\Controller;
 
 use AppBundle\Entity\Message;
 use AppBundle\Entity\Room;
+use AppBundle\Task\RoomMessageListTask;
 use BroadcastBundle\Event\BroadcastEvent;
-use AppBundle\Handler\RoomMessageHandler;
+use AppBundle\Task\RoomMessageSaveTask;
 use AppBundle\Transformer\RoomMessageTransformer;
 use League\Fractal\Resource\Collection;
 use League\Fractal\Resource\Item;
@@ -21,12 +22,12 @@ class RoomMessageController extends Controller
     /**
      * @Route("/api/rooms/{room}/messages/", methods={"GET"}, name="room_message_list")
      */
-    public function indexAction(Room $room, Request $request, RoomMessageHandler $handler)
+    public function indexAction(Room $room, Request $request, RoomMessageListTask $task)
     {
         $limit = $request->get('limit') ?? 10;
         $offset = $request->get('offset') ?? 0;
 
-        $messages = $handler->list($room, $this->getUser(), $limit, $offset);
+        $messages = $task->run($room, $this->getUser(), $limit, $offset);
 
         $resource = new Collection($messages, new RoomMessageTransformer());
 
@@ -38,16 +39,16 @@ class RoomMessageController extends Controller
     /**
      * @Route("/api/rooms/{room}/messages/", methods={"POST"}, name="room_message_create")
      */
-    public function createAction(Room $room, Request $request, RoomMessageHandler $handler)
+    public function createAction(Room $room, Request $request, RoomMessageSaveTask $task)
     {
         if (!in_array($this->getUser(), $room->getUsers()->toArray())) {
             throw $this->createNotFoundException();
         }
 
-        $message = $handler->save(new Message(), $room, $this->getUser(), $request);
+        $message = $task->run(new Message(), $room, $this->getUser(), $request);
 
-        if($handler->getErrors()->count() > 0) {
-            return $this->validationError($handler->getErrors());
+        if($task->getErrors()->count() > 0) {
+            return $this->validationError($task->getErrors());
         }
 
         $event = new BroadcastEvent($message);

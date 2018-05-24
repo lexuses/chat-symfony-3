@@ -40,13 +40,13 @@ class Room
     private $createdAt;
 
     /**
-     * @ORM\ManyToMany(targetEntity="AppBundle\Entity\User")
+     * @ORM\ManyToMany(targetEntity="AppBundle\Entity\User", cascade={"persist"})
      * @Assert\Count(min="1", minMessage="Minimum one user")
      */
     private $users;
 
     /**
-     * @ORM\OneToMany(targetEntity="AppBundle\Entity\RoomMessage", mappedBy="room")
+     * @ORM\OneToMany(targetEntity="AppBundle\Entity\RoomMessage", mappedBy="room", cascade={"persist", "remove"})
      */
     private $messages;
 

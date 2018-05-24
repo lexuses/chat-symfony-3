@@ -2,6 +2,7 @@
 
 namespace AppBundle\Repository;
 
+use AppBundle\Entity\Message;
 use AppBundle\Entity\Room;
 use AppBundle\Entity\RoomMessage;
 use AppBundle\Entity\User;
@@ -68,5 +69,33 @@ class RoomMessageRepository extends EntityRepository
             $message->setStatus(RoomMessage::STATUS_READ);
         }
         $this->getEntityManager()->flush();
+    }
+
+    /**
+     * Save message to all users in room
+     *
+     * @param Message $message
+     * @param Room $room
+     * @param $fromUser
+     * @param bool $info
+     * @return array
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    public function saveRoomMessages(Message $message, Room $room, $fromUser, bool $info)
+    {
+        $this->getEntityManager()->persist($message);
+        $this->getEntityManager()->flush();
+
+        $roomMessages = [];
+        foreach ($room->getUsers() as $toUser) {
+            $roomMessages[$toUser->getId()] = $this->getEntityManager()
+                                        ->getRepository(Message::class)
+                                        ->save($message, $room, $fromUser, $toUser, $info);
+        }
+        $this->getEntityManager()->flush();
+
+
+        return $roomMessages;
     }
 }

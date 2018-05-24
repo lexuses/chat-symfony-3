@@ -3,7 +3,7 @@
 namespace AppBundle\Controller;
 
 use AppBundle\Entity\User;
-use AppBundle\Handler\UserHandler;
+use AppBundle\Task\UserRegisterTask;
 use AppBundle\Transformer\UserTransformer;
 use League\Fractal\Resource\Collection;
 use League\Fractal\Resource\Item;
@@ -20,12 +20,12 @@ class UserController extends Controller
     /**
      * @Route("/api/register/", methods={"POST"}, name="register")
      */
-    public function registerAction(Request $request, UserHandler $handler)
+    public function registerAction(Request $request, UserRegisterTask $task)
     {
-        $user = $handler->register(new User(), $request);
+        $user = $task->run(new User(), $request);
 
-        if($handler->getErrors()->count() > 0) {
-            return $this->validationError($handler->getErrors());
+        if($task->getErrors()->count() > 0) {
+            return $this->validationError($task->getErrors());
         }
 
         // Generate token manually
@@ -49,9 +49,13 @@ class UserController extends Controller
     /**
      * @Route("/api/users/", methods={"GET"}, name="user list")
      */
-    public function listAction(Request $request, UserHandler $handler)
+    public function listAction(Request $request)
     {
-        $resource = new Collection($handler->list(), new UserTransformer());
+        $users = $this->getDoctrine()
+            ->getRepository(User::class)
+            ->findAll();
+
+        $resource = new Collection($users, new UserTransformer());
 
         return new JsonResponse(
             $this->fractal($resource, $request)

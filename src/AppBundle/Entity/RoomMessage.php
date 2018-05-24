@@ -24,7 +24,7 @@ class RoomMessage
     /**
      * @var Room
      *
-     * @ORM\ManyToOne(targetEntity="AppBundle\Entity\Room")
+     * @ORM\ManyToOne(targetEntity="AppBundle\Entity\Room", inversedBy="messages", cascade={"persist", "remove"})
      * @ORM\JoinColumn(name="room_id", referencedColumnName="id")
      */
     private $room;
@@ -32,7 +32,7 @@ class RoomMessage
     /**
      * @var Message
      *
-     * @ORM\ManyToOne(targetEntity="AppBundle\Entity\Message")
+     * @ORM\ManyToOne(targetEntity="AppBundle\Entity\Message", cascade={"persist", "remove"})
      * @ORM\JoinColumn(name="message_id", referencedColumnName="id")
      */
     private $message;

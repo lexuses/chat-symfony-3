@@ -2,6 +2,11 @@
 
 namespace AppBundle\Repository;
 
+use AppBundle\Entity\Message;
+use AppBundle\Entity\Room;
+use AppBundle\Entity\RoomMessage;
+use AppBundle\Entity\User;
+use Carbon\Carbon;
 use Doctrine\ORM\EntityRepository;
 
 /**
@@ -12,4 +17,29 @@ use Doctrine\ORM\EntityRepository;
  */
 class MessageRepository extends EntityRepository
 {
+    /**
+     * Save message instance
+     *
+     * @param Message $message
+     * @param Room $room
+     * @param $fromUser
+     * @param User $toUser
+     * @param bool $info
+     * @return RoomMessage
+     * @throws \Doctrine\ORM\ORMException
+     */
+    public function save(Message $message, Room $room, $fromUser, User $toUser, bool $info)
+    {
+        $roomMessage = new RoomMessage();
+        $roomMessage->setMessage($message);
+        $roomMessage->setRoom($room);
+        $roomMessage->setInfo($info);
+        $roomMessage->setFromUser($fromUser);
+        $roomMessage->setToUser($toUser);
+        $roomMessage->setStatus(RoomMessage::STATUS_SENT);
+        $roomMessage->setCreatedAt(Carbon::now());
+        $this->getEntityManager()->persist($roomMessage);
+
+        return $roomMessage;
+    }
 }
